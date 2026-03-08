@@ -61,16 +61,9 @@ class App extends Component {
     }
     if (paused) return;
     this.setState((prevState) => {
+      // Modifikasi: t dibiarkan menjadi negatif jika mode countdown
       const t = prevState.t + (mode === 'countdown' ? -1 : 1) * 0.5;
-      if (t <= 0) {
-        this.releaseWakeLock();
-        return {
-          t: 0,
-          paused: true,
-        };
-      } else {
-        return { t };
-      }
+      return { t };
     });
   }
 
@@ -132,6 +125,7 @@ class App extends Component {
           state.editing = 'second';
         }
         state.t += (direction === 'up' ? 1 : -1) * (state.editing === 'second' ? 1 : 60);
+        // Tetap jaga agar saat setting manual tidak di bawah nol
         if (state.t < 0) {
           state.t = 0;
         }
@@ -181,14 +175,22 @@ class App extends Component {
 
   render() {
     const { t, paused, editing, mode, showCursor, fullscreen } = this.state;
-    const second = parseInt(t % 60);
-    const minute = parseInt((t - second) / 60);
+    
+    // Logika perhitungan angka negatif
+    const isNegative = t < 0;
+    const absT = Math.abs(t);
+    const second = parseInt(absT % 60);
+    const minute = parseInt((absT - second) / 60);
+
     return (
       <div className="App">
         <div
-          className={clsx('clock', { 'show-cursor': showCursor })}
+          // Class 'overtime' aktif jika angka negatif
+          className={clsx('clock', { 'show-cursor': showCursor, 'overtime': isNegative })}
           onDoubleClick={() => this.toggleFullScreen()}
         >
+          {/* Tampilkan tanda minus jika waktu habis */}
+          {isNegative && <span className="time">-</span>}
           <span className={clsx('time minute', { editing: editing === 'minute' })}>{pad(minute)}</span>
           :
           <span className={clsx('time second', { editing: editing === 'second' })}>{pad(second)}</span>
